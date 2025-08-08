@@ -2,13 +2,16 @@ import sys
 import time
 import numpy as np
 import argparse
+import socket
+import threading
+import json
 
 
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QMainWindow, QDialog, QSpinBox,
     QFormLayout, QInputDialog, QPushButton, QSizePolicy
 )
-from PyQt6.QtCore import Qt, QTimer, QRect
+from PyQt6.QtCore import Qt, QTimer, QRect, pyqtSignal
 from PyQt6.QtGui import QPainter, QPen, QColor, QFont, QFontMetrics, QAction, QShortcut
 
 
@@ -214,6 +217,8 @@ class TimerWidget(QWidget):
 
 
 class MainWindow(QMainWindow):
+    remote_command = pyqtSignal(str)
+
     def __init__(self, talk_time, qna_time):
         super().__init__()
         self.setWindowTitle("Conference Timer")
@@ -276,6 +281,66 @@ class MainWindow(QMainWindow):
         ]:
             self.addAction(action)
         
+        # Start Server
+        self.tcp_server = TimerServer("0.0.0.0", 5555, self.remote_command)
+        self.tcp_server.start()
+        self.remote_command.connect(self.handle_command)
+    
+    def handle_command(self, data):
+        message = json.loads(data)
+
+        cmd = message.get("command")
+        if cmd == "startpause":
+            self.timer_widget.start_pause_timer()
+        elif cmd == "reset":
+            self.timer_widget.reset_timer()
+        elif cmd == "set_times":
+            talk = message.get("talk")
+            qna = message.get("qna")
+            if talk:
+                self.timer_widget.talk_time = talk * 60
+            if qna:
+                self.timer_widget.qna_time = qna * 60
+            print(f'{self.timer_widget.talk_time=}')
+            print(f'{self.timer_widget.qna_time=}')
+            self.timer_widget.reset_timer()
+        elif cmd == "adjust":
+            self.timer_widget.adjust_time(message.get("delta", 0))
+        else:
+            print("Unknown command:", message)
+
+    def closeEvent(self, event):
+        self.tcp_server.stop()
+        super().closeEvent(event)
+
+class TimerServer(threading.Thread):
+    def __init__(self, host, port, signal):
+        super().__init__(daemon=True)
+        self.host = host
+        self.port = port
+        self.signal = signal
+        self.running = True
+
+    def run(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_sock:
+            server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            server_sock.bind((self.host, self.port))
+            server_sock.listen()
+
+            while self.running:
+                client_sock, _ = server_sock.accept()
+                with client_sock:
+                    data = client_sock.recv(1024)
+                    if data:
+                        try:
+                            data = data.decode("utf-8")
+                            self.signal.emit(data)
+                        except Exception as e:
+                            print("Invalid message:", e)
+
+    def stop(self):
+        self.running = False 
+
 def except_hook(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)
 
