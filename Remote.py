@@ -39,6 +39,7 @@ class RemoteControlWindow(QMainWindow):
             ("Set Times", self.send_set_times),
             ("+10s", lambda: self.send({"command": "adjust", "delta": 10})),
             ("-10s", lambda: self.send({"command": "adjust", "delta": -10})),
+            ("Fullscreen", lambda: self.send({"command": "fullscreen"})),
         ]
 
         for label, func in btns:
@@ -54,7 +55,7 @@ class RemoteControlWindow(QMainWindow):
 
     def send_set_times(self):
         self.send({
-            "command": "set_times",
+            "command": "reset",
             "talk": self.talk_time.value(),
             "qna": self.qna_time.value(),
         })

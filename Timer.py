@@ -120,9 +120,6 @@ class TimerWidget(QWidget):
         if ok:
             self.adjust_time(text if direction == "add" else -text)
 
-    def set_fullscreen_mode(self, is_fullscreen):
-        self.update()
-
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -219,7 +216,7 @@ class TimerWidget(QWidget):
 class MainWindow(QMainWindow):
     remote_command = pyqtSignal(str)
 
-    def __init__(self, talk_time, qna_time):
+    def __init__(self, talk_time, qna_time, host="0.0.0.0", port=5555):
         super().__init__()
         self.setWindowTitle("Conference Timer")
         self.setMinimumSize(600, 600)
@@ -282,9 +279,15 @@ class MainWindow(QMainWindow):
             self.addAction(action)
         
         # Start Server
-        self.tcp_server = TimerServer("0.0.0.0", 5555, self.remote_command)
+        self.tcp_server = TimerServer(host, port, self.remote_command)
         self.tcp_server.start()
         self.remote_command.connect(self.handle_command)
+    
+    def toggle_fullscreen(self):
+        if self.isFullScreen():
+            self.showNormal()     # Exit fullscreen
+        else:
+            self.showFullScreen()
     
     def handle_command(self, data):
         message = json.loads(data)
@@ -293,19 +296,17 @@ class MainWindow(QMainWindow):
         if cmd == "startpause":
             self.timer_widget.start_pause_timer()
         elif cmd == "reset":
-            self.timer_widget.reset_timer()
-        elif cmd == "set_times":
             talk = message.get("talk")
             qna = message.get("qna")
             if talk:
                 self.timer_widget.talk_time = talk * 60
             if qna:
                 self.timer_widget.qna_time = qna * 60
-            print(f'{self.timer_widget.talk_time=}')
-            print(f'{self.timer_widget.qna_time=}')
             self.timer_widget.reset_timer()
         elif cmd == "adjust":
             self.timer_widget.adjust_time(message.get("delta", 0))
+        elif cmd == "fullscreen":
+            self.toggle_fullscreen()
         else:
             print("Unknown command:", message)
 
@@ -356,6 +357,9 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--talk", dest="talk_named", type=float, help="Talk duration in seconds")
     parser.add_argument("-q", "--qna", dest="qna_named", type=float, help="Q&A duration in seconds")
 
+    parser.add_argument(f"--host", dest="host", type=str, help="Remote server host", default="0.0.0.0")
+    parser.add_argument("-p", "--port", dest="port", type=int, help="Remote server port", default=5555)
+
     args = parser.parse_args()
 
     talk_time = args.talk_named if args.talk_named is not None else (args.talk if args.talk is not None else 12)
@@ -363,6 +367,6 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     sys.excepthook = except_hook
-    window = MainWindow(talk_time, qna_time)
+    window = MainWindow(talk_time, qna_time, host=args.host, port=args.port)
     window.show()
     sys.exit(app.exec())
