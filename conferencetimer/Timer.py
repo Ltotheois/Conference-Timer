@@ -219,7 +219,7 @@ class TimerWidget(QWidget):
 class MainWindow(QMainWindow):
     remote_command = pyqtSignal(str)
 
-    def __init__(self, talk_time, qna_time, host="0.0.0.0", port=5555):
+    def __init__(self, talk_time, qna_time, host="0.0.0.0", port=5555, allow_remote=True):
         super().__init__()
         self.setWindowTitle("Conference Timer")
         self.setMinimumSize(600, 600)
@@ -282,9 +282,10 @@ class MainWindow(QMainWindow):
             self.addAction(action)
         
         # Start Server
-        self.tcp_server = TimerServer(host, port, self.remote_command)
-        self.tcp_server.start()
-        self.remote_command.connect(self.handle_command)
+        if allow_remote:
+            self.tcp_server = TimerServer(host, port, self.remote_command)
+            self.tcp_server.start()
+            self.remote_command.connect(self.handle_command)
     
     def toggle_fullscreen(self):
         if self.isFullScreen():
@@ -361,6 +362,8 @@ def start_timer():
     parser.add_argument("--host", dest="host", type=str, help="Remote server host", default="0.0.0.0")
     parser.add_argument("--port", dest="port", type=int, help="Remote server port", default=5555)
 
+    parser.add_argument("--noremote", dest="allow_remote", help="Disable remote control", action='store_false')
+
     args = parser.parse_args()
 
     talk_time = args.talk_named if args.talk_named is not None else (args.talk if args.talk is not None else 12)
@@ -369,7 +372,7 @@ def start_timer():
     app = QApplication(sys.argv)
     sys.excepthook = except_hook
     threading.excepthook = lambda args: except_hook(*args[:3])
-    window = MainWindow(talk_time, qna_time, host=args.host, port=args.port)
+    window = MainWindow(talk_time, qna_time, host=args.host, port=args.port, allow_remote=args.allow_remote)
     window.show()
     sys.exit(app.exec())
 
