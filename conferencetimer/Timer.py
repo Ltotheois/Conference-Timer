@@ -348,9 +348,7 @@ class TimerServer(threading.Thread):
 def except_hook(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)
 
-
-
-if __name__ == "__main__":
+def start_timer():
     parser = argparse.ArgumentParser(description="Conference Timer")
 
     parser.add_argument("talk", type=float, nargs="?", default=None, help="Talk duration in seconds")
@@ -374,3 +372,6 @@ if __name__ == "__main__":
     window = MainWindow(talk_time, qna_time, host=args.host, port=args.port)
     window.show()
     sys.exit(app.exec())
+
+if __name__ == "__main__":
+    start_timer()

@@ -73,8 +73,11 @@ class RemoteControlWindow(QMainWindow):
         except Exception as e:
             self.status.setText("Error: " + str(e))
 
-if __name__ == "__main__":
+def start_remote():
     app = QApplication(sys.argv)
     window = RemoteControlWindow()
     window.show()
     sys.exit(app.exec())
+
+if __name__ == "__main__":
+    start_remote()
