@@ -351,15 +351,15 @@ def except_hook(cls, exception, traceback):
 def start_timer():
     parser = argparse.ArgumentParser(description="Conference Timer")
 
-    parser.add_argument("talk", type=float, nargs="?", default=None, help="Talk duration in seconds")
-    parser.add_argument("qna", type=float, nargs="?", default=None, help="Q&A duration in seconds")
+    parser.add_argument("talk", type=float, nargs="?", default=None, help="Talk duration in minutes")
+    parser.add_argument("qna", type=float, nargs="?", default=None, help="Q&A duration in minutes")
 
     # Optional named arguments (override positional if given)
-    parser.add_argument("-t", "--talk", dest="talk_named", type=float, help="Talk duration in seconds")
-    parser.add_argument("-q", "--qna", dest="qna_named", type=float, help="Q&A duration in seconds")
+    parser.add_argument("-t", "--talk", dest="talk_named", type=float, help="Talk duration in minutes")
+    parser.add_argument("-q", "--qna", dest="qna_named", type=float, help="Q&A duration in minutes")
 
-    parser.add_argument(f"--host", dest="host", type=str, help="Remote server host", default="0.0.0.0")
-    parser.add_argument("-p", "--port", dest="port", type=int, help="Remote server port", default=5555)
+    parser.add_argument("--host", dest="host", type=str, help="Remote server host", default="0.0.0.0")
+    parser.add_argument("--port", dest="port", type=int, help="Remote server port", default=5555)
 
     args = parser.parse_args()
 
