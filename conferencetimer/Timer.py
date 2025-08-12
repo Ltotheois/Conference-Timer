@@ -219,7 +219,7 @@ class TimerWidget(QWidget):
 class MainWindow(QMainWindow):
     remote_command = pyqtSignal(str)
 
-    def __init__(self, talk_time, qna_time, host="0.0.0.0", port=5555, allow_remote=True):
+    def __init__(self, talk_time, qna_time, host="0.0.0.0", port=5555, allow_remote=True, code=None):
         super().__init__()
         self.setWindowTitle("Conference Timer")
         self.setMinimumSize(600, 600)
@@ -274,18 +274,34 @@ class MainWindow(QMainWindow):
         subx_action.triggered.connect(lambda: self.timer_widget.adjust_custom_time("sub"))
         adjust_menu.addAction(subx_action)
 
+        # Remote Menu
+        remote_menu = menubar.addMenu("Remote")
+
+        self.remote_action = QAction('Remote', self)
+        self.remote_action.setCheckable(True)
+        self.remote_action.triggered.connect(lambda: self.toggle_remote())
+        remote_menu.addAction(self.remote_action)
+
+
+
         # Ensure global shortcut activation (outside menus)
         for action in [
             start_pause_action, reset_action, settings_action,
-            add10_action, sub10_action, addx_action, subx_action
+            add10_action, sub10_action, addx_action, subx_action,
+            self.remote_action
         ]:
             self.addAction(action)
         
         # Start Server
+        self.tcp_server = None
+        self.host = host
+        self.port = port
+        self.code = code.strip()
+        self.remote_command.connect(self.handle_command)
+        
         if allow_remote:
-            self.tcp_server = TimerServer(host, port, self.remote_command)
-            self.tcp_server.start()
-            self.remote_command.connect(self.handle_command)
+            self.toggle_remote()
+            
     
     def toggle_fullscreen(self):
         if self.isFullScreen():
@@ -295,6 +311,9 @@ class MainWindow(QMainWindow):
     
     def handle_command(self, data):
         message = json.loads(data)
+
+        if self.code and self.code != message.get('code').strip():
+            return
 
         cmd = message.get("command")
         if cmd == "startpause":
@@ -315,8 +334,21 @@ class MainWindow(QMainWindow):
             print("Unknown command:", message)
 
     def closeEvent(self, event):
-        self.tcp_server.stop()
+        if self.tcp_server:
+            self.tcp_server.stop()
         super().closeEvent(event)
+    
+    def toggle_remote(self):
+        if self.tcp_server:
+            self.tcp_server.stop()
+            self.tcp_server = None
+            self.remote_action.setChecked(False)
+            return(False)
+        else:
+            self.tcp_server = TimerServer(self.host, self.port, self.remote_command)
+            self.tcp_server.start()
+            self.remote_action.setChecked(True)
+            return(True)
 
 class TimerServer(threading.Thread):
     def __init__(self, host, port, signal):
@@ -336,7 +368,7 @@ class TimerServer(threading.Thread):
                 client_sock, _ = server_sock.accept()
                 with client_sock:
                     data = client_sock.recv(1024)
-                    if data:
+                    if data and self.running:
                         try:
                             data = data.decode("utf-8")
                             self.signal.emit(data)
@@ -344,7 +376,7 @@ class TimerServer(threading.Thread):
                             print("Invalid message:", e)
 
     def stop(self):
-        self.running = False 
+        self.running = False
 
 def except_hook(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)
@@ -363,6 +395,7 @@ def start_timer():
     parser.add_argument("--port", dest="port", type=int, help="Remote server port", default=5555)
 
     parser.add_argument("--noremote", dest="allow_remote", help="Disable remote control", action='store_false')
+    parser.add_argument("--code", dest="code", type=str, help="Disable identification via code")
 
     args = parser.parse_args()
 
@@ -372,7 +405,7 @@ def start_timer():
     app = QApplication(sys.argv)
     sys.excepthook = except_hook
     threading.excepthook = lambda args: except_hook(*args[:3])
-    window = MainWindow(talk_time, qna_time, host=args.host, port=args.port, allow_remote=args.allow_remote)
+    window = MainWindow(talk_time, qna_time, host=args.host, port=args.port, allow_remote=args.allow_remote, code=args.code)
     window.show()
     sys.exit(app.exec())
 

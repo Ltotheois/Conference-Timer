@@ -16,6 +16,7 @@ class RemoteControlWindow(QMainWindow):
 
         self.host_input = QLineEdit("127.0.0.1")
         self.port_input = QLineEdit("5555")
+        self.code_input = QLineEdit("")
         self.talk_time = QDoubleSpinBox()
         self.qna_time = QDoubleSpinBox()
         self.talk_time.setMaximum(9999)
@@ -31,6 +32,8 @@ class RemoteControlWindow(QMainWindow):
         layout.addWidget(self.host_input)
         layout.addWidget(QLabel("Port:"))
         layout.addWidget(self.port_input)
+        layout.addWidget(QLabel("Code:"))
+        layout.addWidget(self.code_input)
 
         layout.addWidget(QLabel("Talk Duration (min):"))
         layout.addWidget(self.talk_time)
@@ -66,6 +69,8 @@ class RemoteControlWindow(QMainWindow):
     def send(self, msg):
         host = self.host_input.text().strip()
         port = int(self.port_input.text().strip())
+        code = self.code_input.text().strip()
+        msg['code'] = code
         try:
             with socket.create_connection((host, port), timeout=2) as s:
                 s.sendall(json.dumps(msg).encode("utf-8"))
