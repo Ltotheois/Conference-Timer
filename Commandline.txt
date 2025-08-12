@@ -1,2 +1,0 @@
-echo '{"command": "startpause"}' | nc 127.0.0.1 8888
-echo '{"command": "reset", "talk": 30, "qna": 15}' | nc 127.0.0.1 8888
