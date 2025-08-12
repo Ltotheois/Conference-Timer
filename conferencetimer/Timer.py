@@ -153,7 +153,7 @@ class TimerWidget(QWidget):
         elif elapsed_time < self.qna_time + self.talk_time:
             remaining_time = self.qna_time - ( elapsed_time - self.talk_time)
             time_ratio = remaining_time / self.qna_time
-            sub_string = 'Questions'
+            sub_string = 'QnA'
         else:
             remaining_time = 0
             time_ratio = 1
@@ -200,7 +200,7 @@ class TimerWidget(QWidget):
 
         # Time text
         painter.setPen(text_color)
-        font_size = int(draw_size * 0.2)
+        font_size = int(draw_size * 0.28)
         font = QFont("Arial", font_size)
         painter.setFont(font)
         fm = QFontMetrics(font)
@@ -213,7 +213,7 @@ class TimerWidget(QWidget):
         painter.setFont(phase_font)
         fm2 = QFontMetrics(phase_font)
         phase_width = fm2.horizontalAdvance(sub_string)
-        painter.drawText(center.x() - phase_width // 2, center.y() + text_height, sub_string)
+        painter.drawText(center.x() - phase_width // 2, center.y() + int(text_height / 1.2), sub_string)
 
 
 class MainWindow(QMainWindow):
@@ -282,13 +282,18 @@ class MainWindow(QMainWindow):
         self.remote_action.triggered.connect(lambda: self.toggle_remote())
         remote_menu.addAction(self.remote_action)
 
+        self.code_action = QAction('Code', self)
+        self.code_action.setCheckable(True)
+        self.code_action.triggered.connect(lambda: self.toggle_code())
+        remote_menu.addAction(self.code_action)
+
 
 
         # Ensure global shortcut activation (outside menus)
         for action in [
             start_pause_action, reset_action, settings_action,
             add10_action, sub10_action, addx_action, subx_action,
-            self.remote_action
+            self.remote_action, self.code_action
         ]:
             self.addAction(action)
         
@@ -296,12 +301,13 @@ class MainWindow(QMainWindow):
         self.tcp_server = None
         self.host = host
         self.port = port
-        self.code = code.strip()
+        self.code = None
         self.remote_command.connect(self.handle_command)
         
         if allow_remote:
             self.toggle_remote()
-            
+        if code:
+            self.toggle_code(code)
     
     def toggle_fullscreen(self):
         if self.isFullScreen():
@@ -348,6 +354,20 @@ class MainWindow(QMainWindow):
             self.tcp_server = TimerServer(self.host, self.port, self.remote_command)
             self.tcp_server.start()
             self.remote_action.setChecked(True)
+            return(True)
+    
+    def toggle_code(self, value=None):
+        if self.code:
+            self.code = None
+            self.code_action.setChecked(False)
+            return(False)
+        else:
+            if not value:
+                value, ok = QInputDialog.getText(self, "Identification code", "Enter code to identify remote:")
+                if not ok:
+                    return
+            self.code = value.strip()
+            self.code_action.setChecked(True)
             return(True)
 
 class TimerServer(threading.Thread):

@@ -6,23 +6,33 @@ import socket
 import json
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QLabel,
-    QLineEdit, QHBoxLayout, QDoubleSpinBox
+    QLineEdit, QDoubleSpinBox
 )
+from PyQt6.QtCore import QSettings
+
 
 class RemoteControlWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Remote Timer Controller")
+        self.settings = QSettings("ConferenceTimer", "Remote")
 
-        self.host_input = QLineEdit("127.0.0.1")
-        self.port_input = QLineEdit("5555")
-        self.code_input = QLineEdit("")
+        talk_default = self.settings.value("talk_time", 12, type=float)
+        qna_default = self.settings.value("qna_time", 3, type=float)
+        ip_default = self.settings.value("server_ip", "127.0.0.1")
+        port_default = self.settings.value("server_port", "5555")
+        code_default = self.settings.value("ident_code", "1234")
+
+        self.host_input = QLineEdit(ip_default)
+        self.port_input = QLineEdit(port_default)
+        self.code_input = QLineEdit(code_default)
         self.talk_time = QDoubleSpinBox()
         self.qna_time = QDoubleSpinBox()
         self.talk_time.setMaximum(9999)
         self.qna_time.setMaximum(9999)
-        self.talk_time.setValue(12)
-        self.qna_time.setValue(3)
+        self.talk_time.setValue(talk_default)
+        self.qna_time.setValue(qna_default)
+
 
         self.status = QLabel("Disconnected")
 
@@ -77,6 +87,15 @@ class RemoteControlWindow(QMainWindow):
             self.status.setText("Sent: " + msg["command"])
         except Exception as e:
             self.status.setText("Error: " + str(e))
+    
+    def closeEvent(self, event):
+        # Save current settings before exit
+        self.settings.setValue("talk_time", self.talk_time.value())
+        self.settings.setValue("qna_time", self.qna_time.value())
+        self.settings.setValue("server_ip", self.host_input.text())
+        self.settings.setValue("server_port", self.port_input.text())
+        self.settings.setValue("ident_code", self.code_input.text())
+        super().closeEvent(event)
 
 def start_remote():
     app = QApplication(sys.argv)
