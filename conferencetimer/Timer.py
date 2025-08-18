@@ -218,6 +218,8 @@ class TimerWidget(QWidget):
         phase_width = fm2.horizontalAdvance(sub_string)
         painter.drawText(center.x() - phase_width // 2, center.y() + int(text_height / 1.2), sub_string)
 
+        painter.end()
+
 
 class MainWindow(QMainWindow):
     remote_command = pyqtSignal(str)
@@ -319,9 +321,11 @@ class MainWindow(QMainWindow):
     
     def toggle_fullscreen(self):
         if self.isFullScreen():
-            self.showNormal()     # Exit fullscreen
+            self.showNormal()
+            self.menuBar().show()
         else:
             self.showFullScreen()
+            self.menuBar().hide()
     
     def handle_command(self, data):
         message = json.loads(data)
