@@ -203,7 +203,7 @@ class TimerWidget(QWidget):
 
         # Time text
         painter.setPen(text_color)
-        font_size = int(draw_size * 0.28)
+        font_size = int(draw_size * 0.25)
         font = QFont("Arial", font_size)
         painter.setFont(font)
         fm = QFontMetrics(font)
@@ -252,6 +252,11 @@ class MainWindow(QMainWindow):
         settings_action.triggered.connect(self.timer_widget.open_settings)
         actions_menu.addAction(settings_action)
 
+        fullscreen_action = QAction("Fullscreen", self)
+        fullscreen_action.setShortcut("Ctrl+F")
+        fullscreen_action.triggered.connect(self.toggle_fullscreen)
+        actions_menu.addAction(fullscreen_action)
+
         # Adjust Menu
         adjust_menu = menubar.addMenu("Adjust Time")
 
@@ -296,7 +301,7 @@ class MainWindow(QMainWindow):
         for action in [
             start_pause_action, reset_action, settings_action,
             add10_action, sub10_action, addx_action, subx_action,
-            self.remote_action, self.code_action
+            self.remote_action, self.code_action, fullscreen_action,
         ]:
             self.addAction(action)
         
