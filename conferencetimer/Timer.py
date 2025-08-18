@@ -125,7 +125,8 @@ class TimerWidget(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        if not painter.isActive():
+            return
 
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.fillRect(self.rect(), QColor("#303030"))
@@ -326,6 +327,8 @@ class MainWindow(QMainWindow):
         else:
             self.showFullScreen()
             self.menuBar().hide()
+        
+        self.update()
     
     def handle_command(self, data):
         message = json.loads(data)
