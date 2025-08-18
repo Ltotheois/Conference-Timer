@@ -127,6 +127,9 @@ class TimerWidget(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.fillRect(self.rect(), QColor("#303030"))
+
         # Leave 10% margin
         margin_ratio = 0.10
         size = min(self.width(), self.height())
@@ -219,7 +222,7 @@ class TimerWidget(QWidget):
 class MainWindow(QMainWindow):
     remote_command = pyqtSignal(str)
 
-    def __init__(self, talk_time, qna_time, host="0.0.0.0", port=5555, allow_remote=True, code=None):
+    def __init__(self, talk_time, qna_time, host="0.0.0.0", port=5555, remote=True, code=None):
         super().__init__()
         self.setWindowTitle("Conference Timer")
         self.setMinimumSize(600, 600)
@@ -304,7 +307,7 @@ class MainWindow(QMainWindow):
         self.code = None
         self.remote_command.connect(self.handle_command)
         
-        if allow_remote:
+        if remote:
             self.toggle_remote()
         if code:
             self.toggle_code(code)
@@ -414,8 +417,8 @@ def start_timer():
     parser.add_argument("--host", dest="host", type=str, help="Remote server host", default="0.0.0.0")
     parser.add_argument("--port", dest="port", type=int, help="Remote server port", default=5555)
 
-    parser.add_argument("--noremote", dest="allow_remote", help="Disable remote control", action='store_false')
-    parser.add_argument("--code", dest="code", type=str, help="Disable identification via code")
+    parser.add_argument("--remote", dest="remote", help="Enable remote control", action='store_true')
+    parser.add_argument("--code", dest="code", type=str, help="Identification via code")
 
     args = parser.parse_args()
 
@@ -425,7 +428,7 @@ def start_timer():
     app = QApplication(sys.argv)
     sys.excepthook = except_hook
     threading.excepthook = lambda args: except_hook(*args[:3])
-    window = MainWindow(talk_time, qna_time, host=args.host, port=args.port, allow_remote=args.allow_remote, code=args.code)
+    window = MainWindow(talk_time, qna_time, host=args.host, port=args.port, remote=args.remote, code=args.code)
     window.show()
     sys.exit(app.exec())
 
