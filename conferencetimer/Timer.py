@@ -125,9 +125,9 @@ class TimerWidget(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
+
         if not painter.isActive():
             return
-
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.fillRect(self.rect(), QColor("#303030"))
 
@@ -190,12 +190,16 @@ class TimerWidget(QWidget):
 
 
         # Background ring
+        if not painter.isActive():
+            return
         pen = QPen(Qt.GlobalColor.white, ring_thickness)
         pen.setCapStyle(Qt.PenCapStyle.FlatCap)
         painter.setPen(pen)
         painter.drawEllipse(arc_rect)
 
         # Foreground ring
+        if not painter.isActive():
+            return
         pen.setColor(ring_color)
         painter.setPen(pen)
         start_angle = +90 * 16  # 12 o'clock
@@ -203,6 +207,8 @@ class TimerWidget(QWidget):
         painter.drawArc(arc_rect, start_angle, span_angle)
 
         # Time text
+        if not painter.isActive():
+            return
         painter.setPen(text_color)
         font_size = int(draw_size * 0.25)
         font = QFont("Arial", font_size)
@@ -213,6 +219,8 @@ class TimerWidget(QWidget):
         painter.drawText(center.x() - text_width // 2, center.y() + text_height // 4, center_string)
 
         # Phase text
+        if not painter.isActive():
+            return
         phase_font = QFont("Arial", int(font_size * 0.4))
         painter.setFont(phase_font)
         fm2 = QFontMetrics(phase_font)
@@ -327,9 +335,7 @@ class MainWindow(QMainWindow):
         else:
             self.showFullScreen()
             self.menuBar().hide()
-        
-        self.update()
-    
+            
     def handle_command(self, data):
         message = json.loads(data)
 
