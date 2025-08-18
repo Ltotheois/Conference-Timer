@@ -129,101 +129,98 @@ class TimerWidget(QWidget):
         if not painter.isActive():
             return
         
-        try:
-            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-            painter.fillRect(self.rect(), QColor("#303030"))
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.fillRect(self.rect(), QColor("#303030"))
 
-            # Leave 10% margin
-            margin_ratio = 0.10
-            size = min(self.width(), self.height())
-            margin = int(size * margin_ratio)
-            draw_size = size - 2 * margin
-            ring_thickness = int(draw_size * 0.07)
-            radius = draw_size // 2
-            center = self.rect().center()
+        # Leave 10% margin
+        margin_ratio = 0.10
+        size = min(self.width(), self.height())
+        margin = int(size * margin_ratio)
+        draw_size = size - 2 * margin
+        ring_thickness = int(draw_size * 0.07)
+        radius = draw_size // 2
+        center = self.rect().center()
 
-            # Arc rectangle
-            arc_rect = QRect(
-                center.x() - radius,
-                center.y() - radius,
-                2 * radius,
-                2 * radius
-            )
+        # Arc rectangle
+        arc_rect = QRect(
+            center.x() - radius,
+            center.y() - radius,
+            2 * radius,
+            2 * radius
+        )
 
-            # Time ratio
-            elapsed_time = self.get_elapsed_time()
-            if elapsed_time < self.talk_time:
-                remaining_time = self.talk_time - elapsed_time
-                time_ratio = remaining_time / self.talk_time
-                sub_string = 'Talk'
-            elif elapsed_time < self.qna_time + self.talk_time:
-                remaining_time = self.qna_time - ( elapsed_time - self.talk_time)
-                time_ratio = remaining_time / self.qna_time
-                sub_string = 'QnA'
+        # Time ratio
+        elapsed_time = self.get_elapsed_time()
+        if elapsed_time < self.talk_time:
+            remaining_time = self.talk_time - elapsed_time
+            time_ratio = remaining_time / self.talk_time
+            sub_string = 'Talk'
+        elif elapsed_time < self.qna_time + self.talk_time:
+            remaining_time = self.qna_time - ( elapsed_time - self.talk_time)
+            time_ratio = remaining_time / self.qna_time
+            sub_string = 'QnA'
+        else:
+            remaining_time = 0
+            time_ratio = 1
+            sub_string = 'Time is up'
+        
+        center_string = self.format_time(remaining_time)
+
+        if time_ratio > 0.5:
+            ring_color = QColor('#32d132')
+            text_color = Qt.GlobalColor.white
+        elif time_ratio > 0.25:
+            ring_color = QColor('#eb6b1c')
+            text_color = Qt.GlobalColor.white
+        else:
+            ring_color = QColor('#e0142c')
+            text_color = QColor('#e0142c')
+        
+        if not remaining_time:
+            if int(time.perf_counter() * 2) % 2:
+                text_color = QColor("#e0142c")
             else:
-                remaining_time = 0
-                time_ratio = 1
-                sub_string = 'Time is up'
-            
-            center_string = self.format_time(remaining_time)
+                text_color = QColor("#bd1a2e")
+            ring_color = text_color
+            # scale_factor = 1 + 0.15 * np.sin(time.perf_counter() * 2)
+            # ring_thickness *= scale_factor
+            # draw_size *= scale_factor
 
-            if time_ratio > 0.5:
-                ring_color = QColor('#32d132')
-                text_color = Qt.GlobalColor.white
-            elif time_ratio > 0.25:
-                ring_color = QColor('#eb6b1c')
-                text_color = Qt.GlobalColor.white
-            else:
-                ring_color = QColor('#e0142c')
-                text_color = QColor('#e0142c')
-            
-            if not remaining_time:
-                if int(time.perf_counter() * 2) % 2:
-                    text_color = QColor("#e0142c")
-                else:
-                    text_color = QColor("#bd1a2e")
-                ring_color = text_color
-                # scale_factor = 1 + 0.15 * np.sin(time.perf_counter() * 2)
-                # ring_thickness *= scale_factor
-                # draw_size *= scale_factor
-
-            if self.is_paused:
-                text_color = QColor("#949494")
+        if self.is_paused:
+            text_color = QColor("#949494")
 
 
-            # Background ring
-            pen = QPen(Qt.GlobalColor.white, ring_thickness)
-            pen.setCapStyle(Qt.PenCapStyle.FlatCap)
-            painter.setPen(pen)
-            painter.drawEllipse(arc_rect)
+        # Background ring
+        pen = QPen(Qt.GlobalColor.white, ring_thickness)
+        pen.setCapStyle(Qt.PenCapStyle.FlatCap)
+        painter.setPen(pen)
+        painter.drawEllipse(arc_rect)
 
-            # Foreground ring
-            pen.setColor(ring_color)
-            painter.setPen(pen)
-            start_angle = +90 * 16  # 12 o'clock
-            span_angle = int(360 * time_ratio * 16)  # Clockwise (negative)
-            painter.drawArc(arc_rect, start_angle, span_angle)
+        # Foreground ring
+        pen.setColor(ring_color)
+        painter.setPen(pen)
+        start_angle = +90 * 16  # 12 o'clock
+        span_angle = int(360 * time_ratio * 16)  # Clockwise (negative)
+        painter.drawArc(arc_rect, start_angle, span_angle)
 
-            # Time text
-            painter.setPen(text_color)
-            font_size = int(draw_size * 0.25)
-            font = QFont("Arial", font_size)
-            painter.setFont(font)
-            fm = QFontMetrics(font)
-            text_width = fm.horizontalAdvance(center_string)
-            text_height = fm.height()
-            painter.drawText(center.x() - text_width // 2, center.y() + text_height // 4, center_string)
+        # Time text
+        painter.setPen(text_color)
+        font_size = int(draw_size * 0.25)
+        font = QFont("Arial", font_size)
+        painter.setFont(font)
+        fm = QFontMetrics(font)
+        text_width = fm.horizontalAdvance(center_string)
+        text_height = fm.height()
+        painter.drawText(center.x() - text_width // 2, center.y() + text_height // 4, center_string)
 
-            # Phase text
-            phase_font = QFont("Arial", int(font_size * 0.4))
-            painter.setFont(phase_font)
-            fm2 = QFontMetrics(phase_font)
-            phase_width = fm2.horizontalAdvance(sub_string)
-            painter.drawText(center.x() - phase_width // 2, center.y() + int(text_height / 1.2), sub_string)
+        # Phase text
+        phase_font = QFont("Arial", int(font_size * 0.4))
+        painter.setFont(phase_font)
+        fm2 = QFontMetrics(phase_font)
+        phase_width = fm2.horizontalAdvance(sub_string)
+        painter.drawText(center.x() - phase_width // 2, center.y() + int(text_height / 1.2), sub_string)
 
-            painter.end()
-        except RuntimeError:
-            return
+        painter.end()
 
 
 class MainWindow(QMainWindow):
